@@ -1,0 +1,21 @@
+{
+  "profile_name": "DATA_PIPELINE",
+  "version": "1.0.0",
+  "description": "Domain profile for Data Engineering DAGs, Polars/DuckDB vectorized execution, and schema enforcement.",
+  "target_stack": "Python / Polars / DuckDB / Airflow / Delta Lake",
+  "supported_mcp_servers": ["google-cloud-pubsub", "google-cloud-logging", "supabase"],
+  "node_categories": [
+    "Source Ingest Node",
+    "Validation & Quality Gate",
+    "Transformation / Aggregation",
+    "Target Sink Node",
+    "Observability / Telemetry"
+  ],
+  "discovery_questions": [
+    "Is execution Batch, Micro-batch, or Real-time Streaming?",
+    "Is schema enforced strictly at ingest or Schema-on-Read?",
+    "How are node retries and idempotency handled?",
+    "What are the memory and dataset scale constraints?",
+    "How are corrupt rows handled (Fail-fast vs Dead-Letter Queue)?"
+  ]
+}

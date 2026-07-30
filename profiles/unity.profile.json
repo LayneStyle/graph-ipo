@@ -1,0 +1,21 @@
+{
+  "profile_name": "UNITY_GAMEDEV",
+  "version": "1.0.0",
+  "description": "Domain profile for Unity Game Architecture, HFSM, Inspector Serialized Fields, and aura-unity MCP orchestration.",
+  "target_engine": "Unity",
+  "supported_mcp_servers": ["aura-unity", "unityMCP"],
+  "node_categories": [
+    "System Engine",
+    "Entity State",
+    "Data Container (ScriptableObject)",
+    "Spatial Scene",
+    "Interface/UI"
+  ],
+  "discovery_questions": [
+    "What is the network topology (Singleplayer, NGO, Fusion, Mirror)?",
+    "What physics strategy is used (PhysX Rigidbody vs Kinematic Raycasting)?",
+    "Is architecture based on ScriptableObject Events, DI (VContainer), or Singletons?",
+    "How is scene loading managed (Single Scene vs Additive Addressables)?",
+    "Are audio/VFX events decoupled via ScriptableObject Event Channels?"
+  ]
+}

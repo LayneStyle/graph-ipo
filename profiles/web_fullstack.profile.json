@@ -1,0 +1,21 @@
+{
+  "profile_name": "WEB_FULLSTACK",
+  "version": "1.0.0",
+  "description": "Domain profile for React, FastAPI, Supabase, and Chrome DevTools / Stitch MCP integration.",
+  "target_stack": "React + FastAPI + Supabase",
+  "supported_mcp_servers": ["chrome-devtools-mcp", "StitchMCP", "supabase"],
+  "node_categories": [
+    "Client Component",
+    "Client Hook / State",
+    "API Route Handler",
+    "Database / RLS Policy",
+    "External Integration"
+  ],
+  "discovery_questions": [
+    "What authentication provider and RBAC model is used (Supabase Auth, Auth0)?",
+    "What is the rendering strategy (CSR SPA vs SSR Next.js)?",
+    "How is server state managed (TanStack Query vs SWR)?",
+    "How are TypeScript types shared with FastAPI Pydantic models?",
+    "What Tailwind CSS breakpoints and dark mode settings apply?"
+  ]
+}

@@ -1,0 +1,131 @@
+{
+  "version": "1.0",
+  "nodes": [
+    {
+      "id": "Assets\\Scripts\\Net\\NetworkManager_cs_NetworkManager",
+      "title": "NetworkManager",
+      "status": "IMPLEMENTED",
+      "target_symbols": [
+        {
+          "symbol": "NetworkManager"
+        }
+      ],
+      "inputs": [],
+      "process_execution_plan": [
+        "Execute Initialize",
+        "Execute Initialize",
+        "Execute PingServer",
+        "Execute PingServer"
+      ],
+      "outputs": []
+    },
+    {
+      "id": "Assets\\Scripts\\Player\\PlayerController_cs_PlayerController",
+      "title": "PlayerController",
+      "status": "IMPLEMENTED",
+      "target_symbols": [
+        {
+          "symbol": "PlayerController"
+        }
+      ],
+      "inputs": [],
+      "process_execution_plan": [
+        "Execute OnFireInput",
+        "Execute OnFireInput",
+        "Execute PlayEmptyClick",
+        "Execute PlayEmptyClick"
+      ],
+      "outputs": []
+    },
+    {
+      "id": "Assets\\Scripts\\Services\\AuthService_cs_AuthService",
+      "title": "AuthService",
+      "status": "IMPLEMENTED",
+      "target_symbols": [
+        {
+          "symbol": "AuthService"
+        }
+      ],
+      "inputs": [],
+      "process_execution_plan": [
+        "Execute AuthenticateUser",
+        "Execute AuthenticateUser"
+      ],
+      "outputs": []
+    },
+    {
+      "id": "services\\analytics_py_AnalyticsTracker",
+      "title": "AnalyticsTracker",
+      "status": "IMPLEMENTED",
+      "target_symbols": [
+        {
+          "symbol": "AnalyticsTracker"
+        }
+      ],
+      "inputs": [
+        {
+          "name": "self",
+          "type": "any",
+          "description": "Parameter for track_event"
+        },
+        {
+          "name": "event_name",
+          "type": "any",
+          "description": "Parameter for track_event"
+        },
+        {
+          "name": "self",
+          "type": "any",
+          "description": "Parameter for track_event"
+        },
+        {
+          "name": "event_name",
+          "type": "any",
+          "description": "Parameter for track_event"
+        },
+        {
+          "name": "self",
+          "type": "any",
+          "description": "Parameter for export_telemetry"
+        },
+        {
+          "name": "self",
+          "type": "any",
+          "description": "Parameter for export_telemetry"
+        }
+      ],
+      "process_execution_plan": [
+        "Execute track_event",
+        "Execute track_event",
+        "Execute export_telemetry",
+        "Execute export_telemetry"
+      ],
+      "outputs": []
+    },
+    {
+      "id": "src\\services\\InventoryService_ts_InventoryService",
+      "title": "InventoryService",
+      "status": "IMPLEMENTED",
+      "target_symbols": [
+        {
+          "symbol": "InventoryService"
+        }
+      ],
+      "inputs": [],
+      "process_execution_plan": [
+        "Execute loadState",
+        "Execute loadState",
+        "Execute syncCloudStorage",
+        "Execute syncCloudStorage"
+      ],
+      "outputs": []
+    }
+  ],
+  "edges": [
+    {
+      "source": "Assets\\Scripts\\Net\\NetworkManager_cs_NetworkManager",
+      "target": "Assets\\Scripts\\Services\\AuthService_cs_AuthService",
+      "label": "calls AuthenticateUser"
+    }
+  ]
+}

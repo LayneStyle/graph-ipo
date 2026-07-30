@@ -1,0 +1,113 @@
+{
+  "version": "1.0.0",
+  "active_profile": "UNITY_GAMEDEV",
+  "phase": "SPECIFIED",
+  "nodes": [
+    {
+      "id": "node-001",
+      "title": "Player Authentication & Session Init",
+      "category": "System Engine",
+      "lifecycle_phase": "Awake / NetworkInit",
+      "status": "IMPLEMENTED",
+      "target_symbols": [
+        {
+          "symbol": "NetworkManager.Initialize()",
+          "file": "Assets/Scripts/Net/NetworkManager.cs"
+        },
+        {
+          "symbol": "AuthService.AuthenticateUser()",
+          "file": "Assets/Scripts/Services/AuthService.cs"
+        }
+      ],
+      "process_execution_plan": [
+        {
+          "step": 1,
+          "type": "SECURITY_CHECK",
+          "rule": "IF network_status != CONNECTED THEN ABORT('Offline mode')"
+        },
+        {
+          "step": 2,
+          "type": "PARALLEL_FETCH",
+          "actions": [
+            "Fetch user_profile from AuthService.AuthenticateUser()",
+            "Fetch player_inventory from InventoryService.loadState()"
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "case": "Success",
+          "target_symbol": "GameManager.SetState(LOBBY)"
+        }
+      ]
+    },
+    {
+      "id": "node-002",
+      "title": "Weapon Attack & Ballistic Calculation",
+      "category": "Entity State",
+      "lifecycle_phase": "Update / OnFireInput",
+      "status": "READY_FOR_IMPLEMENTATION",
+      "target_symbols": [
+        {
+          "symbol": "PlayerController.OnFireInput()",
+          "file": "Assets/Scripts/Player/PlayerController.cs"
+        },
+        {
+          "symbol": "WeaponManager.GetActiveWeapon()",
+          "file": "Assets/Scripts/Combat/WeaponManager.cs"
+        },
+        {
+          "symbol": "HealthSystem.TakeDamage()",
+          "file": "Assets/Scripts/Combat/HealthSystem.cs"
+        }
+      ],
+      "process_execution_plan": [
+        {
+          "step": 1,
+          "type": "SECURITY_CHECK",
+          "rule": "IF player_ammo_count <= 0 THEN PlayEmptyClick() AND RETURN"
+        },
+        {
+          "step": 2,
+          "type": "PARALLEL_FETCH",
+          "actions": [
+            "Fetch weapon_data from WeaponManager.GetActiveWeapon()"
+          ]
+        },
+        {
+          "step": 3,
+          "type": "FAN_OUT_DISPATCH",
+          "targets": [
+            "HealthSystem.TakeDamage(total_damage) on Target.cs"
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "case": "Hit",
+          "target_symbol": "HealthSystem.TakeDamage()"
+        }
+      ]
+    },
+    {
+      "id": "node-003",
+      "title": "Cloud Inventory Sync",
+      "category": "Data Engine",
+      "lifecycle_phase": "Async Background",
+      "status": "DESIGN",
+      "target_symbols": [
+        {
+          "symbol": "CloudInventoryService.SyncState()",
+          "file": "Assets/Scripts/Services/CloudInventoryService.cs"
+        }
+      ],
+      "process_execution_plan": [
+        {
+          "step": 1,
+          "rule": "Verify network connection"
+        }
+      ],
+      "outputs": []
+    }
+  ]
+}

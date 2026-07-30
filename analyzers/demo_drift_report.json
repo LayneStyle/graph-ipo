@@ -1,0 +1,231 @@
+{
+  "metadata": {
+    "generated_at": "2026-07-29T23:24:32.573893",
+    "canvas_file": "D:\\Github Repos\\IO-Workflow\\graph-ipo\\analyzers\\demo_canvas.json",
+    "code_dir": "D:\\Github Repos\\IO-Workflow\\graph-ipo\\analyzers\\demo_codebase",
+    "analyzer_version": "1.0.0"
+  },
+  "compliance_score": 0,
+  "total_discrepancies": 12,
+  "node_audit_results": {
+    "node-001": {
+      "status": "MATCH",
+      "discrepancies": [
+        {
+          "discrepancy_type": "MISSING_IN_CODE",
+          "severity": "MEDIUM",
+          "node_id": "node-001",
+          "node_title": "Player Authentication & Session Init",
+          "target_symbol": "GameManager.SetState(LOBBY)",
+          "description": "Node output target symbol 'GameManager.SetState(LOBBY)' is missing in codebase.",
+          "details": {
+            "output_case": "Success"
+          }
+        }
+      ],
+      "coverage_percentage": 100.0
+    },
+    "node-002": {
+      "status": "PARTIAL",
+      "discrepancies": [
+        {
+          "discrepancy_type": "MISSING_IN_CODE",
+          "severity": "HIGH",
+          "node_id": "node-002",
+          "node_title": "Weapon Attack & Ballistic Calculation",
+          "target_symbol": "WeaponManager.GetActiveWeapon()",
+          "description": "Design target symbol 'WeaponManager.GetActiveWeapon()' is missing in the codebase.",
+          "details": {
+            "file_hint": "Assets/Scripts/Combat/WeaponManager.cs"
+          }
+        },
+        {
+          "discrepancy_type": "MISSING_IN_CODE",
+          "severity": "HIGH",
+          "node_id": "node-002",
+          "node_title": "Weapon Attack & Ballistic Calculation",
+          "target_symbol": "HealthSystem.TakeDamage()",
+          "description": "Design target symbol 'HealthSystem.TakeDamage()' is missing in the codebase.",
+          "details": {
+            "file_hint": "Assets/Scripts/Combat/HealthSystem.cs"
+          }
+        },
+        {
+          "discrepancy_type": "MISSING_IN_CODE",
+          "severity": "MEDIUM",
+          "node_id": "node-002",
+          "node_title": "Weapon Attack & Ballistic Calculation",
+          "target_symbol": "HealthSystem.TakeDamage()",
+          "description": "Node output target symbol 'HealthSystem.TakeDamage()' is missing in codebase.",
+          "details": {
+            "output_case": "Hit"
+          }
+        },
+        {
+          "discrepancy_type": "ORDER_MISMATCH",
+          "severity": "HIGH",
+          "node_id": "node-002",
+          "node_title": "Weapon Attack & Ballistic Calculation",
+          "target_symbol": "PlayerController.OnFireInput",
+          "description": "Step sequence violation in 'PlayerController.OnFireInput': Call to 'WeaponManager.GetActiveWeapon' (Step 2) occurred after Step 3 execution.",
+          "details": {
+            "caller": "PlayerController.OnFireInput",
+            "called_symbol": "WeaponManager.GetActiveWeapon",
+            "expected_step": 2,
+            "previous_step": 3,
+            "call_order": 2
+          }
+        },
+        {
+          "discrepancy_type": "ORDER_MISMATCH",
+          "severity": "HIGH",
+          "node_id": "node-002",
+          "node_title": "Weapon Attack & Ballistic Calculation",
+          "target_symbol": "PlayerController.OnFireInput",
+          "description": "Step sequence violation in 'PlayerController.OnFireInput': Call to 'PlayEmptyClick' (Step 1) occurred after Step 3 execution.",
+          "details": {
+            "caller": "PlayerController.OnFireInput",
+            "called_symbol": "PlayEmptyClick",
+            "expected_step": 1,
+            "previous_step": 3,
+            "call_order": 3
+          }
+        }
+      ],
+      "coverage_percentage": 33.33333333333333
+    },
+    "node-003": {
+      "status": "MISSING",
+      "discrepancies": [
+        {
+          "discrepancy_type": "MISSING_IN_CODE",
+          "severity": "HIGH",
+          "node_id": "node-003",
+          "node_title": "Cloud Inventory Sync",
+          "target_symbol": "CloudInventoryService.SyncState()",
+          "description": "Design target symbol 'CloudInventoryService.SyncState()' is missing in the codebase.",
+          "details": {
+            "file_hint": "Assets/Scripts/Services/CloudInventoryService.cs"
+          }
+        }
+      ],
+      "coverage_percentage": 0.0
+    }
+  },
+  "unmapped_code_symbols": [
+    {
+      "discrepancy_type": "UNMAPPED_IN_DESIGN",
+      "severity": "LOW",
+      "node_id": "N/A",
+      "node_title": "Unmapped Code Method",
+      "target_symbol": "NetworkManager.PingServer",
+      "description": "Codebase method 'NetworkManager.PingServer' (Assets\\Scripts\\Net\\NetworkManager.cs:12) is not mapped to any GraphIPO design node.",
+      "details": {
+        "file_path": "Assets\\Scripts\\Net\\NetworkManager.cs",
+        "line_number": 12,
+        "language": "csharp"
+      }
+    },
+    {
+      "discrepancy_type": "UNMAPPED_IN_DESIGN",
+      "severity": "LOW",
+      "node_id": "N/A",
+      "node_title": "Unmapped Code Method",
+      "target_symbol": "AnalyticsTracker.track_event",
+      "description": "Codebase method 'AnalyticsTracker.track_event' (services\\analytics.py:2) is not mapped to any GraphIPO design node.",
+      "details": {
+        "file_path": "services\\analytics.py",
+        "line_number": 2,
+        "language": "python"
+      }
+    },
+    {
+      "discrepancy_type": "UNMAPPED_IN_DESIGN",
+      "severity": "LOW",
+      "node_id": "N/A",
+      "node_title": "Unmapped Code Method",
+      "target_symbol": "AnalyticsTracker.export_telemetry",
+      "description": "Codebase method 'AnalyticsTracker.export_telemetry' (services\\analytics.py:5) is not mapped to any GraphIPO design node.",
+      "details": {
+        "file_path": "services\\analytics.py",
+        "line_number": 5,
+        "language": "python"
+      }
+    },
+    {
+      "discrepancy_type": "UNMAPPED_IN_DESIGN",
+      "severity": "LOW",
+      "node_id": "N/A",
+      "node_title": "Unmapped Code Method",
+      "target_symbol": "InventoryService.loadState",
+      "description": "Codebase method 'InventoryService.loadState' (src\\services\\InventoryService.ts:2) is not mapped to any GraphIPO design node.",
+      "details": {
+        "file_path": "src\\services\\InventoryService.ts",
+        "line_number": 2,
+        "language": "typescript"
+      }
+    },
+    {
+      "discrepancy_type": "UNMAPPED_IN_DESIGN",
+      "severity": "LOW",
+      "node_id": "N/A",
+      "node_title": "Unmapped Code Method",
+      "target_symbol": "InventoryService.syncCloudStorage",
+      "description": "Codebase method 'InventoryService.syncCloudStorage' (src\\services\\InventoryService.ts:6) is not mapped to any GraphIPO design node.",
+      "details": {
+        "file_path": "src\\services\\InventoryService.ts",
+        "line_number": 6,
+        "language": "typescript"
+      }
+    }
+  ],
+  "summary": {
+    "total_nodes": 3,
+    "files_scanned": 5,
+    "total_symbols_extracted": 9,
+    "discrepancies_total": 12,
+    "missing_in_code_count": 5,
+    "order_mismatch_count": 2,
+    "unmapped_in_design_count": 5,
+    "compliance_score": 0
+  },
+  "nodes_audit": [
+    {
+      "node_id": "node-001",
+      "title": "Player Authentication & Session Init",
+      "lifecycle_phase": "Awake / NetworkInit",
+      "status": "IMPLEMENTED",
+      "matched_symbols": [
+        "NetworkManager.Initialize()",
+        "AuthService.AuthenticateUser()"
+      ],
+      "missing_symbols": [],
+      "order_issues_count": 0
+    },
+    {
+      "node_id": "node-002",
+      "title": "Weapon Attack & Ballistic Calculation",
+      "lifecycle_phase": "Update / OnFireInput",
+      "status": "READY_FOR_IMPLEMENTATION",
+      "matched_symbols": [
+        "PlayerController.OnFireInput()"
+      ],
+      "missing_symbols": [
+        "WeaponManager.GetActiveWeapon()",
+        "HealthSystem.TakeDamage()"
+      ],
+      "order_issues_count": 2
+    },
+    {
+      "node_id": "node-003",
+      "title": "Cloud Inventory Sync",
+      "lifecycle_phase": "Async Background",
+      "status": "DESIGN",
+      "matched_symbols": [],
+      "missing_symbols": [
+        "CloudInventoryService.SyncState()"
+      ],
+      "order_issues_count": 0
+    }
+  ]
+}
