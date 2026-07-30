@@ -1,6 +1,6 @@
 {
   "name": "@0xlayne/graph-ipo-harness",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "GraphIPO MCP Server — Design-first AI-assisted software engineering methodology. Visual architecture graphs with per-node lifecycle, guided discovery, and tree-sitter AST auditing.",
   "type": "module",
   "main": "dist/server.js",
@@ -9,7 +9,8 @@
     "graph-ipo-harness": "dist/server.js"
   },
   "files": [
-    "dist/**/*"
+    "dist/**/*",
+    "README.md"
   ],
   "scripts": {
     "build": "tsc",
