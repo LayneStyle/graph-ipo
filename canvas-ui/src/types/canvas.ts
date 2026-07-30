@@ -43,6 +43,8 @@ export interface IPONodeData extends Record<string, unknown> {
   assigned_to?: string;
   notes?: string;
   description?: string;
+  isTraced?: boolean;
+  isDimmed?: boolean;
 }
 
 export interface GraphIPOCanvasState {

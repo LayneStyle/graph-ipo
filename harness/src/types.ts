@@ -34,6 +34,7 @@ export interface IPOCanvas {
   project_type?: string;
   project_description?: string;
   user_experience_level?: 'beginner' | 'intermediate' | 'advanced';
+  discovery_completed?: boolean;
   code_language: CodeLanguageType;
   nodes: IPONode[];
   edges: IPOEdge[];

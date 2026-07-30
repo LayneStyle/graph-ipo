@@ -2,6 +2,8 @@
 
 MCP Server for **GraphIPO** — a design-first, AI-assisted software engineering methodology.
 
+> ⚠️ **Token Usage Advisory**: GraphIPO's structured design process (discovery interview, node creation, context injection, auditing) consumes more tokens during the **design phase** than a direct "just build it" approach. However, for **medium to large projects**, the upfront design investment typically pays off by reducing rework, ambiguity, and wasted implementation cycles. For very small or throwaway projects, consider whether the design overhead is justified.
+
 ## What is GraphIPO?
 
 GraphIPO lets you design software architecture visually as a graph of Input-Process-Output nodes, then delegate implementation to AI agents that follow your design exactly.

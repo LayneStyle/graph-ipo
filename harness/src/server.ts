@@ -8,7 +8,7 @@ import { loadCanvas, saveCanvas } from "./canvasStore.js";
 import { buildStateBanner, validateCanvasState, evaluateNodePhase } from "./fsm.js";
 import { IPONode, IPOEdge, NodeStatusType, PhaseType, CanvasProgressSummary } from "./types.js";
 import { wsBridge } from "./ws-bridge.js";
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
@@ -64,6 +64,7 @@ server.tool(
     canvas.project_description = args.project_description;
     canvas.user_experience_level = args.experience_level as any;
     canvas.code_language = args.language as any;
+    canvas.discovery_completed = false;
     saveCanvas(canvas, filePath);
 
     const levelInstructions = {
@@ -96,26 +97,35 @@ Language: ${args.language === 'ES' ? 'Spanish' : 'English'}
 
 ${levelInstructions[args.experience_level || 'intermediate']}
 
-═══ DISCOVERY INTERVIEW INSTRUCTIONS ═══
+═══════════════════════════════════════════════════════════════
+⚠️  MANDATORY: DISCOVERY INTERVIEW REQUIRED
+═══════════════════════════════════════════════════════════════
 
-You must now conduct a brief discovery interview with the user to understand their project. Ask these categories of questions ONE OR TWO AT A TIME (not all at once):
+You MUST conduct a discovery interview with the user BEFORE creating any nodes.
+DO NOT call create_ipo_node until you have asked questions and received answers.
 
-1. USERS: Who will use this? (end users, admins, both?)
+Ask these categories of questions ONE or TWO at a time (NOT all at once):
+
+1. USERS: Who will use this? (end users, admins, API consumers, both?)
 2. CORE FEATURES: What are the 3-5 main things a user can do?
-3. DATA: What information does the app need to store/manage?
+3. DATA: What information does the app need to store or manage?
 4. PLATFORM: Web, mobile, desktop? Any specific technology preferences?
-5. INTEGRATIONS: Does it need to connect to external services? (payments, email, etc.)
+5. INTEGRATIONS: Does it need to connect to external services? (payments, auth, APIs, etc.)
 
-After gathering answers, generate the initial architecture graph by calling create_ipo_node for each major component. Use the 'description' field to store a plain-language explanation of what each node does.
+IMPORTANT RULES:
+- Ask 1-2 questions, WAIT for the user's response, then ask the next ones.
+- DO NOT assume answers. The user's vision may surprise you.
+- After gathering enough answers (at least 3 exchanges), call complete_discovery.
+- ONLY THEN start creating nodes with create_ipo_node.
 
-For each node you create:
+After the interview, for each node you create:
 - Set a clear, user-friendly title
-- Write a 'description' in the user's language explaining what this component does and why it exists
+- Write a 'description' explaining what this component does and why it exists
 - Start with high-level nodes (5-8 max), don't over-decompose initially
-- Connect nodes with add_edge to show the flow
-- Use 'notes' to add any context about decisions made
+- Connect nodes with add_edge to show data flow
+- Present the resulting graph to the user for validation
 
-Remember: The user should be able to look at the resulting graph and say "Yes, that's what I want to build" WITHOUT needing to understand the technical details.
+The user should look at the graph and say "Yes, that's what I want to build."
 ═══════════════════════════════════════════════════════════════
 `;
 
@@ -123,6 +133,26 @@ Remember: The user should be able to look at the resulting graph and say "Yes, t
 
     return {
       content: [{ type: "text", text: discoveryInstructions }]
+    };
+  }
+);
+
+// Tool: complete_discovery
+server.tool(
+  "complete_discovery",
+  "Marks the discovery interview as completed. Call this AFTER you have asked the user discovery questions and received their answers. This unlocks node creation without warnings.",
+  {
+    summary: z.string().describe("Brief summary of what was learned during discovery (e.g., 'User wants a 2-player browser game with score tracking')"),
+    path: z.string().optional()
+  },
+  async (args) => {
+    const { canvas, filePath } = loadCanvas(args.path);
+    canvas.discovery_completed = true;
+    saveCanvas(canvas, filePath);
+    wsBridge.broadcast({ type: 'FULL_STATE', payload: canvas });
+    const banner = buildStateBanner(canvas);
+    return {
+      content: [{ type: "text", text: `✅ Discovery interview completed.\n\nSummary: ${args.summary}\n\nYou may now create IPO nodes based on the user's requirements. Start with 5-8 high-level nodes, then connect them with edges.\n${banner}` }]
     };
   }
 );
@@ -168,6 +198,12 @@ server.tool(
   },
   async (args) => {
     const { canvas, filePath } = loadCanvas(args.path);
+
+    // Warn if discovery interview has not been completed
+    let discoveryWarning = '';
+    if (canvas.discovery_completed === false) {
+      discoveryWarning = '\n\n⚠️ WARNING: Discovery interview has not been completed yet. You should conduct the interview with the user first, then call complete_discovery before creating nodes. If you intentionally want to skip the interview, you may continue, but the design quality may suffer.\n';
+    }
 
     const existingIndex = canvas.nodes.findIndex((n) => n.id === args.id);
     const existingNode = existingIndex >= 0 ? canvas.nodes[existingIndex] : null;
@@ -216,7 +252,7 @@ server.tool(
     }
 
     const banner = buildStateBanner(canvas);
-    const contentText = `IPO Node '${args.id}' successfully ${existingIndex >= 0 ? "updated" : "created"}.\n\nNode Details:\n${JSON.stringify(newNode, null, 2)}\n${banner}`;
+    const contentText = `IPO Node '${args.id}' successfully ${existingIndex >= 0 ? "updated" : "created"}.${discoveryWarning}\n\nNode Details:\n${JSON.stringify(newNode, null, 2)}\n${banner}`;
 
     return {
       content: [{ type: "text", text: contentText }]
@@ -267,6 +303,7 @@ server.tool(
     node.lifecycle_phase = evaluateNodePhase(node);
     
     saveCanvas(canvas, filePath);
+    wsBridge.broadcast({ type: 'NODE_UPDATED', payload: { node } });
 
     const banner = buildStateBanner(canvas);
     const contentText = `Pseudocode / Process Execution Plan for Node '${args.node_id}' updated successfully.\n\nNew Execution Plan:\n${JSON.stringify(steps, null, 2)}\n${banner}`;
@@ -335,6 +372,7 @@ server.tool(
     canvas.code_language = args.language as any;
 
     saveCanvas(canvas, filePath);
+    wsBridge.broadcast({ type: 'STATE_CHANGED', payload: canvas });
 
     const banner = buildStateBanner(canvas, process.env.MCP_CLIENT_NAME || "antigravity");
     const contentText = `Code and pseudocode naming language updated from '${previousLanguage}' to '${canvas.code_language}'. All code symbols, method names, and pseudocode must now use ${canvas.code_language === 'EN' ? 'English' : canvas.code_language === 'ES' ? 'Spanish' : 'Custom'} naming conventions.\n${banner}`;
@@ -592,7 +630,9 @@ server.tool(
     node.locked_by = args.agent_id;
     node.locked_at = new Date().toISOString();
     saveCanvas(canvas, filePath);
-    return { content: [{ type: "text", text: `Node ${args.node_id} locked by ${args.agent_id}` }] };
+    wsBridge.broadcast({ type: 'NODE_UPDATED', payload: { node } });
+    const banner = buildStateBanner(canvas);
+    return { content: [{ type: "text", text: `Node ${args.node_id} locked by ${args.agent_id}\n${banner}` }] };
   }
 );
 
@@ -620,7 +660,9 @@ server.tool(
     node.locked_by = undefined;
     node.locked_at = undefined;
     saveCanvas(canvas, filePath);
-    return { content: [{ type: "text", text: `Node ${args.node_id} unlocked` }] };
+    wsBridge.broadcast({ type: 'NODE_UPDATED', payload: { node } });
+    const banner = buildStateBanner(canvas);
+    return { content: [{ type: "text", text: `Node ${args.node_id} unlocked\n${banner}` }] };
   }
 );
 
@@ -638,7 +680,7 @@ server.tool(
     const outPath = path.join(__dirname, "..", "audit_report.json");
     
     try {
-      execSync(`python "${scriptPath}" --code-dir "${args.code_dir}" --canvas-json "${filePath}" --output-json "${outPath}"`, { encoding: 'utf-8' });
+      execFileSync('python', [scriptPath, '--code-dir', args.code_dir, '--canvas-json', filePath, '--output-json', outPath], { encoding: 'utf-8' });
       const report = fs.readFileSync(outPath, "utf-8");
       return { content: [{ type: "text", text: `Audit complete:\n${report}` }] };
     } catch (err: any) {
@@ -982,22 +1024,86 @@ async function main() {
 
   wsBridge.initialize(9120);
 
+  // Always start REST API server for Canvas UI communication
+  const apiApp = express();
+  apiApp.use(express.json());
+
+  // CORS: Allow Canvas UI from any localhost port
+  apiApp.use((req: Request, res: Response, next: any) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    if (req.method === 'OPTIONS') { res.sendStatus(200); return; }
+    next();
+  });
+
+  // REST: Get full canvas state
+  apiApp.get('/api/canvas', (req: Request, res: Response) => {
+    const overridePath = req.query.path as string | undefined;
+    const { canvas } = loadCanvas(overridePath);
+    res.json(canvas);
+  });
+
+  // REST: Update a node from UI
+  apiApp.post('/api/update-node', (req: Request, res: Response) => {
+    const { canvas, filePath } = loadCanvas(req.body.path);
+    const { node_id, updates } = req.body;
+    const node = canvas.nodes.find(n => n.id === node_id);
+    if (node) {
+      Object.assign(node, updates);
+      node.lifecycle_phase = evaluateNodePhase(node);
+      saveCanvas(canvas, filePath);
+      wsBridge.broadcast({ type: 'NODE_UPDATED', payload: { node } });
+      res.json({ success: true, node });
+    } else {
+      res.status(404).json({ error: 'Node not found' });
+    }
+  });
+
+  // REST: Assign node to agent
+  apiApp.post('/api/assign-node', (req: Request, res: Response) => {
+    const { canvas, filePath } = loadCanvas(req.body.path);
+    const { node_id, agent_id } = req.body;
+    const node = canvas.nodes.find(n => n.id === node_id);
+    if (node) {
+      node.assigned_to = agent_id;
+      saveCanvas(canvas, filePath);
+      wsBridge.broadcast({ type: 'NODE_UPDATED', payload: { node } });
+      res.json({ success: true, node });
+    } else {
+      res.status(404).json({ error: 'Node not found' });
+    }
+  });
+
+  const apiPort = parseInt(process.env.GRAPHIPO_API_PORT || '3001', 10);
+  const apiServer = apiApp.listen(apiPort, () => {
+    console.error(`[GraphIPO] REST API available at http://localhost:${apiPort}/api/canvas`);
+  });
+  apiServer.on('error', (err: NodeJS.ErrnoException) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`[GraphIPO] REST API port ${apiPort} in use, trying ${apiPort + 1}...`);
+      apiApp.listen(apiPort + 1, () => {
+        console.error(`[GraphIPO] REST API available at http://localhost:${apiPort + 1}/api/canvas`);
+      });
+    }
+  });
+
+  // Connect MCP transport (SSE or stdio)
   const isSSE = args.includes("--sse") || args.includes("--http") || Boolean(process.env.PORT);
 
   if (isSSE) {
-    const app = express();
-    app.use(express.json());
-
-    const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+    const sseApp = express();
+    sseApp.use(express.json());
+    const ssePort = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
     const sseTransports = new Map<string, SSEServerTransport>();
 
-    app.get("/sse", async (req: Request, res: Response) => {
+    sseApp.get("/sse", async (req: Request, res: Response) => {
       const transport = new SSEServerTransport("/messages", res);
       await server.connect(transport);
       sseTransports.set(transport.sessionId, transport);
     });
 
-    app.post("/messages", async (req: Request, res: Response) => {
+    sseApp.post("/messages", async (req: Request, res: Response) => {
       const sessionId = req.query.sessionId as string;
       const transport = sseTransports.get(sessionId);
       if (transport) {
@@ -1014,48 +1120,13 @@ async function main() {
       }
     });
 
-    // REST endpoints for UI write-back
-    app.post('/api/update-node', (req: Request, res: Response) => {
-      const { canvas, filePath } = loadCanvas();
-      const { node_id, updates } = req.body;
-      const node = canvas.nodes.find(n => n.id === node_id);
-      if (node) {
-        Object.assign(node, updates);
-        node.lifecycle_phase = evaluateNodePhase(node);
-        saveCanvas(canvas, filePath);
-        wsBridge.broadcast({ type: 'NODE_UPDATED', payload: { node } });
-        res.json({ success: true, node });
-      } else {
-        res.status(404).json({ error: 'Node not found' });
-      }
-    });
-
-    app.post('/api/assign-node', (req: Request, res: Response) => {
-      const { canvas, filePath } = loadCanvas();
-      const { node_id, agent_id } = req.body;
-      const node = canvas.nodes.find(n => n.id === node_id);
-      if (node) {
-        node.assigned_to = agent_id;
-        saveCanvas(canvas, filePath);
-        wsBridge.broadcast({ type: 'NODE_UPDATED', payload: { node } });
-        res.json({ success: true, node });
-      } else {
-        res.status(404).json({ error: 'Node not found' });
-      }
-    });
-
-    app.get('/api/canvas', (req: Request, res: Response) => {
-      const { canvas } = loadCanvas();
-      res.json(canvas);
-    });
-
-    app.listen(port, () => {
-      console.log(`GraphIPO Harness MCP Server (HTTP/SSE) listening on port ${port}`);
+    sseApp.listen(ssePort, () => {
+      console.error(`[GraphIPO] SSE transport listening on port ${ssePort}`);
     });
   } else {
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    console.error("GraphIPO Harness MCP Server running on stdio");
+    console.error("[GraphIPO] MCP Server running on stdio");
   }
 }
 

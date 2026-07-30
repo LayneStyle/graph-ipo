@@ -1,8 +1,8 @@
-﻿# Manual de Instalacion y Uso — GraphIPO
+# Installation and Usage Guide — GraphIPO
 
-## Paso 1: Configurar el servidor MCP en tu agente de IA
+## 1. Setting up the MCP Server in your AI Agent
 
-Agrega esta entrada a la configuracion MCP de tu IDE (Antigravity, Cursor, Claude, etc.):
+Add this configuration to your IDE's MCP settings (e.g., Antigravity, Cursor, Claude):
 
 ```json
 {
@@ -15,23 +15,19 @@ Agrega esta entrada a la configuracion MCP de tu IDE (Antigravity, Cursor, Claud
 }
 ```
 
-**Eso es todo.** No necesitas clonar, compilar ni instalar nada manualmente.
-`npx` descarga y ejecuta el servidor automaticamente cada vez que tu agente se conecta.
+**That's it.** You don't need to manually clone, compile, or install anything. `npx` automatically downloads and runs the server every time your agent connects.
 
-### Donde va este archivo segun tu IDE:
-
-| IDE | Archivo de configuracion |
-|-----|--------------------------|
-| **Antigravity** | `~/.gemini/config/mcp_config.json` |
-| **Cursor** | `.cursor/mcp.json` en la raiz del proyecto |
-| **Claude Desktop** | Settings > Developer > MCP Servers |
-| **Claude Code (CLI)** | `claude mcp add graph-ipo npx -y @0xlayne/graph-ipo-harness` |
+### Where does this file go?
+- **Antigravity**: `~/.gemini/config/mcp_config.json`
+- **Cursor**: `.cursor/mcp.json` in the project root
+- **Claude Desktop**: Settings > Developer > MCP Servers
+- **Claude Code (CLI)**: `claude mcp add graph-ipo npx -y @0xlayne/graph-ipo-harness`
 
 ---
 
-## Paso 2 (Opcional): Instalar el Canvas UI visual
+## 2. Installing the Visual Canvas UI
 
-Si quieres ver el grafo de arquitectura en tu navegador:
+To see your architecture graph in the browser, run the Canvas UI locally:
 
 ```bash
 npx degit LayneStyle/graph-ipo/canvas-ui graph-ipo-canvas
@@ -40,67 +36,31 @@ npm install
 npm run dev
 ```
 
-Abre `http://localhost:5173` en tu navegador.
+- **Canvas UI**: Open `http://localhost:3000` in your browser to view the graph.
+- **REST API**: A local API runs automatically at `http://localhost:3001` to serve your canvas data.
 
 ---
 
-## Paso 3: Indicarle a tu agente que inicie
+## 3. Starting Your Agent
 
-### Para un proyecto NUEVO:
+### For a NEW project:
+Tell your AI agent:
+> "I want to build [describe your idea]. Use `start_discovery` to begin."
 
-Dile a tu agente de IA:
+The agent will:
+1. Start an interactive discovery interview asking questions about your project (users, features, platform).
+2. Wait for your answers.
+3. Call `complete_discovery` to finalize the interview phase.
+4. Automatically create architecture nodes based on your requirements.
 
-> "Quiero construir [describe tu idea]. Usa `start_discovery` para comenzar."
+### For an EXISTING project:
+Tell your AI agent:
+> "Scan my existing project and import it into GraphIPO. Use `onboard_existing_project`."
 
-El agente:
-1. Te hara preguntas sobre tu proyecto (usuarios, funcionalidades, plataforma)
-2. Generara un grafo de arquitectura inicial con nodos comprensibles
-3. Te mostrara el resultado para que lo valides
+The agent will:
+1. Scan your source code (TypeScript, Python, C#, etc.).
+2. Create nodes representing your existing modules and directories.
+3. Ask you what you want to change or improve.
 
-### Para un proyecto EXISTENTE:
-
-Dile a tu agente:
-
-> "Escanea mi proyecto existente e importalo a GraphIPO. Usa `onboard_existing_project`."
-
-El agente:
-1. Escaneara tu codigo fuente (TypeScript, Python, C#, etc.)
-2. Creara nodos por cada modulo/directorio encontrado
-3. Te preguntara que quieres cambiar o mejorar
-4. Recomendara si adaptar el diseno al codigo existente o refactorizar
-
----
-
-## Paso 4: Trabajar con el grafo
-
-1. **Ver y editar nodos** en el Canvas UI (doble clic para abrir el inspector)
-2. **Modo Simple**: Etiquetas en lenguaje natural con terminos tecnicos visibles para aprender
-3. **Agregar notas** directamente en cada nodo
-4. **Marcar nodos** como "Ready to Code" cuando el diseno este completo
-5. **Ejecutar auditoria** pidiendo al agente que use `run_audit`
-
----
-
-## Instalacion alternativa (desarrollo local)
-
-Si quieres contribuir o modificar GraphIPO:
-
-```bash
-git clone https://github.com/LayneStyle/graph-ipo.git
-cd graph-ipo/harness
-npm install
-npm run build
-npm link
-```
-
-Esto registra `graph-ipo-harness` como comando global. La config MCP seria:
-
-```json
-{
-  "mcpServers": {
-    "graph-ipo": {
-      "command": "graph-ipo-harness"
-    }
-  }
-}
-```
+### To RESUME a project:
+Simply open your project folder in your IDE! The graph state is automatically persisted in the `.ipo/canvas.json` file. The MCP server and Canvas UI will instantly read from this file and resume right where you left off.

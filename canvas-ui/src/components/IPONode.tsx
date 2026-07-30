@@ -106,10 +106,14 @@ export const IPONode: React.FC<NodeProps<Node<IPONodeData>>> = ({ data, selected
 
   return (
     <div
-      className={`w-96 rounded-xl bg-dark-800 border transition-all duration-200 shadow-2xl text-left ${
-        selected
+      className={`w-96 rounded-xl bg-dark-800 border transition-all duration-300 text-left ${
+        data.isDimmed ? 'opacity-30' : 'opacity-100'
+      } ${
+        data.isTraced
+          ? 'border-indigo-400 ring-4 ring-indigo-500/40 shadow-[0_0_20px_rgba(99,102,241,0.5)] z-50'
+          : selected
           ? 'border-brand-500 ring-2 ring-brand-500/30 shadow-brand-500/10'
-          : 'border-dark-700 hover:border-slate-600'
+          : 'border-dark-700 hover:border-slate-600 shadow-2xl'
       }`}
     >
       {/* Node Header */}

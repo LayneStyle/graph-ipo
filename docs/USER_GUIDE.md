@@ -1,72 +1,40 @@
-# Complete User & MCP Integration Guide — GraphIPO Framework v2
+# User Guide — GraphIPO Framework
 
-Welcome to the official user guide for **GraphIPO** (Graph Input-Process-Output Engineering).
+Welcome to **GraphIPO** (Graph Input-Process-Output Engineering). GraphIPO is a **design-first methodology** that helps you and your AI agent plan, visualize, and implement software systems through a structured architecture graph.
 
-For the complete **Global Installation & Per-Project Setup Manual in Spanish**, please refer to:
-👉 **[INSTALLATION_AND_USAGE_GUIDE.md](INSTALLATION_AND_USAGE_GUIDE.md)**
+## What is GraphIPO?
+GraphIPO encourages you to step back and design your system's architecture before writing code. By breaking your app down into atomic Input-Process-Output (IPO) nodes, you ensure the AI understands the exact data flow and requirements, reducing hallucinations and messy code.
 
----
+## The Core Workflow
+1. **Discovery**: The agent interviews you to understand your requirements, then calls `complete_discovery` to generate a draft design.
+2. **Design**: You and the agent refine the architecture graph. Nodes represent features or components.
+3. **Implementation**: Once a node is fully designed, the agent writes the actual code.
+4. **Audit**: The agent uses the `run_audit` tool to compare the written code against the design in the graph, ensuring compliance.
 
-## 🌐 Language & Naming Directives
+## Understanding the Canvas UI
+When you run the Canvas UI (at `http://localhost:3000`), you'll see a visual representation of your architecture. The UI connects to a local REST API at `http://localhost:3001` to fetch your `.ipo/canvas.json` data.
 
-1. **User Communication Language:** AI Agents communicate with the user in their **native conversational language** (e.g., Spanish, English).
-2. **Internal Framework & Documentation:** All internal specification files, `README.md`, `SKILL.md`, and harness modules are maintained in **English**.
-3. **Code & Pseudocode Naming Selector (`code_language`):**
-   - Options: `EN` (English - default), `ES` (Spanish), or `CUSTOM`.
-   - The MCP tool `set_code_language` and the Canvas UI header allow changing this setting dynamically.
+### How to Read an IPO Node
+Each node in the graph represents a specific piece of your system and follows the **IPO model**:
+- **Inputs**: What data or triggers go into this node?
+- **Process**: What logic or transformation happens inside?
+- **Outputs**: What data is returned or where does it go next?
 
----
+### Node Statuses & Lifecycle Phases
+Nodes move through specific phases as they mature:
+- **MACRO_DESIGN**: High-level concept.
+- **NODE_DRILLDOWN**: Expanding the details.
+- **SPECIFIED**: Requirements are locked in.
+- **IMPLEMENTATION**: Code is being written.
+- **AUDIT**: Code is verified against the design.
 
-## 🚀 1. Getting Started
+Statuses help track readiness (e.g., `DRAFT`, `READY_FOR_IMPLEMENTATION`, `COMPLETED`).
 
-### Start the Canvas UI
-```bash
-cd graph-ipo/canvas-ui
-npm run dev
-```
-Open `http://localhost:5173` in your browser.
+### Flow Tracing
+To understand how data moves through your system, use **Flow Tracing**. Simply select a node in the Canvas UI, and it will highlight the data flow path upstream and downstream, making complex architectures easy to understand.
 
-### MCP Server
-The MCP server starts **automatically** when your AI agent connects (configured in your IDE's MCP settings).
-
----
-
-## 🔌 2. Global MCP Server Configuration
-
-GraphIPO automatically detects the active workspace directory (`process.cwd()`). The MCP server reads or creates the `.ipo/canvas.json` file inside whichever project directory your agent is working on.
-
-### MCP Configuration Entry
-
-In your global MCP config (`mcp_config.json`, `.cursor/mcp.json`, or Claude Desktop config):
-
-```json
-{
-  "mcpServers": {
-    "graph-ipo": {
-      "command": "node",
-      "args": ["<path-to>/graph-ipo/harness/dist/server.js"]
-    }
-  }
-}
-```
-
----
-
-## 🎨 3. Recommended Step-by-Step Workflow
-
-```mermaid
-graph TD
-    A[1. Start Canvas UI: npm run dev] --> B[2. Open http://localhost:5173]
-    B --> C[3. Tell agent: start_discovery or onboard_existing_project]
-    C --> D[4. Agent conducts discovery interview]
-    D --> E[5. Design & Refine IPO Nodes]
-    E --> F[6. Agent Implements Code]
-    F --> G[7. Run AST Audit: run_audit]
-```
-
-1. **Step 1: Start Canvas UI** (`npm run dev` → `http://localhost:5173`)
-2. **Step 2: Tell your agent to begin** — use `start_discovery` for new projects or `onboard_existing_project` for existing codebases.
-3. **Step 3: Discovery interview** — the agent asks questions about your project and generates the initial graph.
-4. **Step 4: Edit or Refine Nodes** directly in the Canvas UI (double click any node to open the inspector).
-5. **Step 5: Agent Implements Code** for nodes marked `READY_FOR_IMPLEMENTATION`.
-6. **Step 6: Run AST Code Audit** via the `run_audit` tool to verify adherence.
+## Tips for Best Results
+- **Be specific in Discovery**: The better you answer the agent's questions, the more accurate the initial graph will be.
+- **Lock and unlock nodes**: If multiple agents are working, use node locking to prevent conflicts.
+- **Keep technical language but explain it**: Aim for an intermediate level. If a node uses advanced concepts, add explanatory notes.
+- **Audit frequently**: Run `run_audit` after major code changes to catch deviations early.

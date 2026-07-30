@@ -24,6 +24,7 @@ interface DetailModalProps {
   onClose: () => void;
   onSaveNode: (updatedNode: IPONodeData) => void;
   onDeleteNode: (nodeId: string) => void;
+  onTraceNode?: (nodeId: string) => void;
 }
 
 export const DetailModal: React.FC<DetailModalProps> = ({
@@ -32,6 +33,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
   onClose,
   onSaveNode,
   onDeleteNode,
+  onTraceNode,
 }) => {
   if (!isOpen || !node) return null;
 
@@ -184,6 +186,17 @@ export const DetailModal: React.FC<DetailModalProps> = ({
               className="px-3 py-1.5 text-xs font-medium text-slate-300 bg-dark-800 hover:bg-dark-700 rounded-lg border border-dark-700 transition-all"
             >
               {viewMode === 'simple' ? '⚙️ Show Advanced Fields' : '📋 Show Simple View'}
+            </button>
+            <button
+              onClick={() => {
+                onTraceNode?.(node.id);
+                onClose();
+              }}
+              className="px-3 py-1.5 text-xs font-medium text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 rounded-lg border border-indigo-500/30 transition-all flex items-center space-x-1"
+              title="Trace Flow"
+            >
+              <Zap className="w-4 h-4" />
+              <span>Trace Flow</span>
             </button>
             <button
               onClick={() => onDeleteNode(node.id)}

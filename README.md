@@ -4,57 +4,18 @@
 
 Decompose complex systems into visual architecture graphs, refine them interactively, and let AI agents implement the code — guaranteeing adherence to your design.
 
----
-
-## 🗂️ Project Structure
-
-```
-├── harness/        # MCP server (Node.js/TypeScript) — published as @0xlayne/graph-ipo-harness
-├── canvas-ui/      # Interactive React + React Flow visual canvas
-├── analyzers/      # Code-to-Graph reverse engineering (Python + Tree-Sitter)
-├── docs/           # Architecture specs, guides, and documentation
-├── skills/         # Agent instructions & SKILL_GRAPH_IPO.md
-└── .ipo/           # Default canvas data (canvas.json)
-```
+> **⚠️ Token Usage Advisory**
+> GraphIPO maintains a rich architecture context. Frequent updates or large graphs can consume a significant amount of context window tokens. Keep your graphs modular and use focused agents when possible.
 
 ---
 
-## 🌟 Core Concepts
+## 🌟 Core Features
 
 1. **Top-Down Hierarchical Graph:** Decompose systems into atomic Input-Process-Output (IPO) nodes.
-2. **Per-Node Lifecycle:** Independent progress tracking (`MACRO_DESIGN` → `NODE_DRILLDOWN` → `SPECIFIED` → `IMPLEMENTATION` → `AUDIT`).
-3. **Guided Discovery:** The agent interviews you about your project and generates the initial architecture.
-4. **Existing Project Onboarding:** Scan an existing codebase and import it as a graph for redesign.
-5. **Bidirectional Canvas UI:** Real-time visual canvas with inline editing, notes, and agent assignment.
-6. **Tree-Sitter AST Audit Engine:** Compare implemented code against design graphs for compliance.
-7. **Multi-Agent Collaboration:** Node locking and task assignment for parallel agent work.
-
----
-
-## 🛠️ MCP Tools (21 Active)
-
-| Tool | Purpose |
-|------|---------|
-| `start_discovery` | **Guided interview** for new projects |
-| `onboard_existing_project` | **Import existing codebase** into the graph |
-| `set_experience_level` | Set user experience level (`beginner` / `intermediate` / `advanced`) |
-| `get_canvas` | Read canvas state and progress dashboard |
-| `create_ipo_node` | Create or update an IPO node |
-| `update_node_pseudocode` | Update pseudocode or execution plan |
-| `set_node_status` | Set node status |
-| `set_code_language` | Set naming language (`EN`, `ES`, `CUSTOM`) |
-| `validate_state` | Run compliance validation & progress metrics |
-| `remove_node` | Remove a node and clean up edges |
-| `add_edge` | Connect two nodes |
-| `remove_edge` | Remove edge by ID |
-| `get_context_injection` | Retrieve connected node context & instructions |
-| `search_nodes` | Search across titles, categories, symbols |
-| `lock_node` / `unlock_node` | Multi-agent node locking |
-| `assign_node` | Assign a node to a specific agent |
-| `get_my_assignments` | List nodes assigned to an agent |
-| `detect_stack` | Auto-detect technology stack |
-| `run_audit` | Execute tree-sitter AST audit |
-| `get_audit_report` | Retrieve last audit report |
+2. **Guided Discovery:** The agent interviews you about your project, then calls `complete_discovery` to generate the architecture.
+3. **Existing Project Onboarding:** Scan an existing codebase and import it as a graph using `onboard_existing_project`.
+4. **Bidirectional Canvas UI:** Real-time visual canvas with inline editing and Flow Tracing.
+5. **Tree-Sitter AST Audit Engine:** Compare implemented code against design graphs for compliance.
 
 ---
 
@@ -62,7 +23,7 @@ Decompose complex systems into visual architecture graphs, refine them interacti
 
 ### 1. Configure the MCP server in your AI agent
 
-Add this to your IDE's MCP configuration:
+Add this to your IDE's MCP configuration (e.g., in Antigravity, Cursor, or Claude):
 
 ```json
 {
@@ -77,7 +38,7 @@ Add this to your IDE's MCP configuration:
 
 That's it. `npx` downloads and runs it automatically. No manual installation needed.
 
-### 2. (Optional) Visual Canvas UI
+### 2. Start the Visual Canvas UI
 
 ```bash
 npx degit LayneStyle/graph-ipo/canvas-ui graph-ipo-canvas
@@ -86,7 +47,8 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173`.
+- **Canvas UI**: Open `http://localhost:3000`.
+- **REST API**: Runs at `http://localhost:3001` to serve the canvas data.
 
 ### 3. Tell your AI agent to begin
 
@@ -96,11 +58,14 @@ Open `http://localhost:5173`.
 **Existing project:**
 > *"Scan my existing codebase and import it into GraphIPO. Use `onboard_existing_project`."*
 
+**Resume project:**
+Just open your project folder in your IDE! The `.ipo/canvas.json` state persists automatically.
+
 ---
 
 ## 📖 Documentation
 
-- [Installation & Usage Guide (ES)](docs/INSTALLATION_AND_USAGE_GUIDE.md)
+- [Installation & Usage Guide](docs/INSTALLATION_AND_USAGE_GUIDE.md)
 - [User Guide](docs/USER_GUIDE.md)
 - [Architecture Spec](docs/architecture_spec.md)
 

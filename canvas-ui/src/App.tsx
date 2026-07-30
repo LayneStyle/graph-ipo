@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
   ReactFlow,
   MiniMap,
@@ -25,6 +25,8 @@ import { LifecyclePhase, IPONodeData, GraphIPOCanvasState, CodeLanguage, Progres
 import { SAMPLE_DATA } from './data/sampleCanvas';
 import { useWebSocket } from './hooks/useWebSocket';
 import { calculateDagreLayout } from './utils/layout';
+import { computeTracedPath } from './utils/tracing';
+import { X } from 'lucide-react';
 
 const AppContent: React.FC = () => {
   const [projectType, setProjectType] = useState<string>(SAMPLE_DATA.project_type);
@@ -41,12 +43,19 @@ const AppContent: React.FC = () => {
   const [isLegendOpen, setIsLegendOpen] = useState(false);
   const [isAuditOpen, setIsAuditOpen] = useState(false);
 
+  const [traceMode, setTraceMode] = useState(false);
+  const [traceSourceId, setTraceSourceId] = useState<string | null>(null);
+  const [tracedNodeIds, setTracedNodeIds] = useState<Set<string>>(new Set());
+  const [tracedEdgeIds, setTracedEdgeIds] = useState<Set<string>>(new Set());
+
   const reactFlowInstance = useReactFlow();
+  const hasReceivedWsState = useRef(false);
 
   const nodeTypes = useMemo(() => ({ ipoNode: IPONode as any }), []);
 
   const handleFullState = useCallback((payload: any) => {
     if (payload && Array.isArray(payload.nodes)) {
+      hasReceivedWsState.current = true;
       const parsedNodes: Node[] = payload.nodes.map((data: IPONodeData) => ({
         id: data.id,
         type: 'ipoNode',
@@ -61,6 +70,31 @@ const AppContent: React.FC = () => {
       if (payload.project_description) setProjectDescription(payload.project_description);
     }
   }, [setNodes, setEdges]);
+
+  // Fetch canvas from REST API on mount
+  useEffect(() => {
+    const apiPort = 3001;
+    fetch(`http://localhost:${apiPort}/api/canvas`)
+      .then(res => res.json())
+      .then(data => {
+        if (!hasReceivedWsState.current && data && (Array.isArray(data.nodes) && data.nodes.length > 0)) {
+          handleFullState(data);
+        }
+      })
+      .catch(() => {
+        // REST API not available — try port 3002 as fallback
+        fetch(`http://localhost:${apiPort + 1}/api/canvas`)
+          .then(res => res.json())
+          .then(data => {
+            if (!hasReceivedWsState.current && data && (Array.isArray(data.nodes) && data.nodes.length > 0)) {
+              handleFullState(data);
+            }
+          })
+          .catch(() => {
+            console.warn('[GraphIPO Canvas] REST API not reachable. Waiting for WebSocket connection...');
+          });
+      });
+  }, [handleFullState]);
 
   const { connected: wsConnected, sendMutation } = useWebSocket({
     FULL_STATE: handleFullState,
@@ -101,6 +135,36 @@ const AppContent: React.FC = () => {
     setSelectedNodeId(node.id);
     setIsModalOpen(true);
   }, []);
+
+  const handleTraceFlow = useCallback((nodeId: string) => {
+    const { tracedNodeIds, tracedEdgeIds } = computeTracedPath(nodeId, nodes, edges);
+    setTracedNodeIds(tracedNodeIds);
+    setTracedEdgeIds(tracedEdgeIds);
+    setTraceSourceId(nodeId);
+    setTraceMode(true);
+  }, [nodes, edges]);
+
+  const handleExitTrace = useCallback(() => {
+    setTraceMode(false);
+    setTraceSourceId(null);
+    setTracedNodeIds(new Set());
+    setTracedEdgeIds(new Set());
+  }, []);
+
+  const onNodeContextMenu = useCallback((event: React.MouseEvent, node: Node) => {
+    event.preventDefault();
+    handleTraceFlow(node.id);
+  }, [handleTraceFlow]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && traceMode) {
+        handleExitTrace();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [traceMode, handleExitTrace]);
 
   const handleSelectNodeFromSidebar = useCallback(
     (nodeId: string) => {
@@ -268,6 +332,39 @@ const AppContent: React.FC = () => {
     return found ? (found.data as unknown as IPONodeData) : null;
   }, [nodes, selectedNodeId]);
 
+  const styledNodes = useMemo(() => {
+    if (!traceMode) {
+      return nodes; // Don't wrap when not tracing — keep original references
+    }
+    return nodes.map((n) => {
+      const isTraced = tracedNodeIds.has(n.id);
+      const isDimmed = !isTraced;
+      // Only create new object if trace state actually changed
+      if ((n.data as any).isTraced === isTraced && (n.data as any).isDimmed === isDimmed) return n;
+      return {
+        ...n,
+        data: { ...n.data, isTraced, isDimmed },
+        style: { ...n.style, zIndex: isTraced ? 1000 : 0 }
+      };
+    });
+  }, [nodes, traceMode, tracedNodeIds]);
+
+  const styledEdges = useMemo(() => {
+    if (!traceMode) return edges;
+    return edges.map((e) => ({
+      ...e,
+      style: {
+        ...e.style,
+        stroke: tracedEdgeIds.has(e.id) ? '#818CF8' : '#374151',
+        strokeWidth: tracedEdgeIds.has(e.id) ? 3 : 1,
+        opacity: tracedEdgeIds.has(e.id) ? 1 : 0.3,
+        transition: 'opacity 0.3s ease, stroke-width 0.3s ease',
+      },
+      animated: tracedEdgeIds.has(e.id),
+      zIndex: tracedEdgeIds.has(e.id) ? 1000 : 0,
+    }));
+  }, [edges, traceMode, tracedEdgeIds]);
+
   const rawNodeDatas = useMemo(() => nodes.map((n) => n.data as unknown as IPONodeData), [nodes]);
 
   const progressSummary = useMemo<ProgressSummary>(() => {
@@ -316,13 +413,25 @@ const AppContent: React.FC = () => {
         />
 
         <main className="flex-1 h-full relative">
+          {traceMode && traceSourceId && (
+            <div className="absolute top-6 left-1/2 transform -translate-x-1/2 z-50 bg-dark-800/90 border border-indigo-500/50 backdrop-blur shadow-2xl rounded-full px-4 py-2 flex items-center space-x-3 pointer-events-auto transition-all animate-fade-in">
+              <div className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
+              <span className="text-sm font-medium text-slate-200">
+                Tracing: <span className="text-indigo-300">{String(nodes.find(n => n.id === traceSourceId)?.data?.title || 'Unknown')}</span>
+              </span>
+              <button onClick={handleExitTrace} className="p-1 hover:bg-dark-700 rounded-full text-slate-400 hover:text-white transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
           <ReactFlow
-            nodes={nodes}
-            edges={edges}
+            nodes={styledNodes}
+            edges={styledEdges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
             onNodeClick={onNodeClick}
+            onNodeContextMenu={onNodeContextMenu}
             nodeTypes={nodeTypes}
             fitView
             minZoom={0.2}
@@ -380,6 +489,7 @@ const AppContent: React.FC = () => {
         onClose={() => setIsModalOpen(false)}
         onSaveNode={handleSaveNode}
         onDeleteNode={handleDeleteNode}
+        onTraceNode={handleTraceFlow}
       />
 
       <UMLLegendModal

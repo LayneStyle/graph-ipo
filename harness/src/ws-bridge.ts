@@ -16,37 +16,49 @@ class WSBridge {
   public setOnMutation(fn: (msg: WSMessage) => void) { this.onMutationFn = fn; }
 
   public initialize(port: number = 9120) {
-    this.wss = new WebSocketServer({ port });
-    console.error(`WebSocket Bridge initialized on port ${port}`);
+    try {
+      this.wss = new WebSocketServer({ port });
 
-    this.wss.on('connection', (ws) => {
-      this.clients.add(ws);
-      console.error('Canvas UI connected');
-
-      // Send full state on connect
-      if (this.getStateFn) {
-        ws.send(JSON.stringify({ type: 'FULL_STATE', payload: this.getStateFn() }));
-      }
-
-      // Handle messages FROM the UI (bidirectional)
-      ws.on('message', (data) => {
-        try {
-          const msg = JSON.parse(data.toString()) as WSMessage;
-          if (this.onMutationFn) {
-            this.onMutationFn(msg);
-          }
-          // Broadcast the change to all OTHER clients
-          this.broadcastExcept(ws, msg);
-        } catch (err) {
-          console.error('Invalid WS message from UI:', err);
+      this.wss.on('error', (err: NodeJS.ErrnoException) => {
+        if (err.code === 'EADDRINUSE') {
+          console.error(`[GraphIPO] WebSocket port ${port} is already in use. Canvas UI sync will be unavailable. Kill the other process or use a different port.`);
+          this.wss = null;
+        } else {
+          console.error('[GraphIPO] WebSocket error:', err);
         }
       });
 
-      ws.on('close', () => {
-        this.clients.delete(ws);
-        console.error('Canvas UI disconnected');
+      console.error(`[GraphIPO] WebSocket Bridge initialized on port ${port}`);
+
+      this.wss.on('connection', (ws) => {
+        this.clients.add(ws);
+        console.error('[GraphIPO] Canvas UI connected');
+
+        if (this.getStateFn) {
+          ws.send(JSON.stringify({ type: 'FULL_STATE', payload: this.getStateFn() }));
+        }
+
+        ws.on('message', (data) => {
+          try {
+            const msg = JSON.parse(data.toString()) as WSMessage;
+            if (this.onMutationFn) {
+              this.onMutationFn(msg);
+            }
+            this.broadcastExcept(ws, msg);
+          } catch (err) {
+            console.error('[GraphIPO] Invalid WS message from UI:', err);
+          }
+        });
+
+        ws.on('close', () => {
+          this.clients.delete(ws);
+          console.error('[GraphIPO] Canvas UI disconnected');
+        });
       });
-    });
+    } catch (err) {
+      console.error('[GraphIPO] Failed to initialize WebSocket Bridge:', err);
+      this.wss = null;
+    }
   }
 
   public broadcast(message: WSMessage) {
