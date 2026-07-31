@@ -38,17 +38,15 @@ Add this to your IDE's MCP configuration (e.g., in Antigravity, Cursor, or Claud
 
 That's it. `npx` downloads and runs it automatically. No manual installation needed.
 
-### 2. Start the Visual Canvas UI
+### 2. Initialize your project
 
 ```bash
-npx degit LayneStyle/graph-ipo/canvas-ui graph-ipo-canvas
-cd graph-ipo-canvas
-npm install
-npm run dev
+npx @0xlayne/graph-ipo-harness init
 ```
 
-- **Canvas UI**: Open `http://localhost:3000`.
-- **REST API**: Runs at `http://localhost:3001` to serve the canvas data.
+This creates `.ipo/canvas.json` and opens the **Canvas UI** automatically in your browser at `http://localhost:3001`.
+
+> The Canvas UI is embedded in the package — no separate installation needed.
 
 ### 3. Tell your AI agent to begin
 

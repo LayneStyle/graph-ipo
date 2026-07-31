@@ -1,34 +1,56 @@
 ---
-name: GraphIPO Agent Explorer
-description: Skill for governing AI Agents exploring, interviewing, specifying, and auditing software systems using the GraphIPO framework.
+name: GraphIPO Agent Skill
+description: Skill for AI agents using the GraphIPO design-first methodology via MCP tools.
 ---
-# SKILL: GraphIPO Agent Explorer & Platform-Native Spec Enforcer
+# SKILL: GraphIPO Agent
 
 ## Prerequisites
-- The GraphIPO MCP server must be running and available to the agent.
-- Familiarity with the active domain profile.
+- The GraphIPO MCP server must be configured in your IDE's MCP settings.
+- A project must be initialized with `graph-ipo init` or by calling `start_discovery`.
 
-## 🚀 1. Core Directives
-1. **Auto-Detect Active Environment:** GraphIPO harness auto-detects the host AI platform.
-2. **Platform-Native Interview Loop:**
-   - **Google Antigravity Mode (`ANTIGRAVITY`):** Automatically use the native `ask_question` tool to present multiple-choice UI modals with checkboxes and write-in fields when discovering node edge cases. Recommend slash commands (`/grill-me` for interactive node discovery, `/teamwork-preview` for multi-agent delegation).
-   - **Claude Code CLI Mode (`CLAUDE`):** Use terminal prompts and subagent invocations.
-   - **Cursor / VS Code Mode (`CURSOR`):** Generate markdown checklists in Composer and status updates.
-   - **Codex / OpenCode Mode (`CODEX`):** Output Pydantic / JSON schema decision tables.
-3. **Method & Symbol Precision:** Specify target symbols, file paths, lifecycle phases, and explicit execution steps (`PARALLEL_FETCH`, `SECURITY_CHECK`, `SEQUENTIAL_COMPUTE`).
-4. **Tri-Layer State Adherence:** Read and write directly to `.ipo/canvas.json`. Never bypass MCP precondition gates.
+## 1. Core Workflow
 
-## 🔄 2. Detailed Workflow Phases (MCP Tools)
-- **MACRO_DESIGN:** Outline the main graph structure using `graphipo_create_node`.
-- **NODE_DRILLDOWN:** Decompose nodes into sub-graphs or properties. Use `graphipo_read_node`.
-- **SPECIFIED:** Finalize specifications and pre-conditions. Use `graphipo_update_node`.
-- **IMPLEMENTATION:** Implement code according to node specifications. Use `graphipo_update_status`.
-- **AUDIT:** Verify implementation matches specification. Use `graphipo_audit_node`.
+### New Project
+1. Call `start_discovery` with the user's project description.
+2. **Conduct the discovery interview** — ask 1-2 questions at a time, wait for answers.
+3. Call `complete_discovery` with a summary of what was learned.
+4. Create 5-8 high-level IPO nodes with `create_ipo_node`.
+5. Connect nodes with `add_edge` to show data flow.
+6. Present the graph to the user for validation.
 
-## ⚠️ 3. Error Handling and Recovery
-- If an operation fails, log the error and attempt to recover by using fallback states.
-- Missing dependencies should trigger an automatic dependency check.
+### Existing Project
+1. Call `onboard_existing_project` to scan the codebase.
+2. Review the generated nodes with the user.
+3. Refine nodes based on user feedback.
 
-## ⚖️ 4. Rules for Agents
-- Agents must transition nodes through phases sequentially.
-- **Phase Regression:** If implementation is blocked or spec is wrong, agents MUST regress the node state using `NEEDS_REVISION` status, updating the node properties with new discoveries before proceeding again.
+### Implementation
+1. Use `get_context_injection` to get scoped context for a specific node.
+2. Implement the code according to the node's specification.
+3. Update node status with `set_node_status` (DESIGN → READY_FOR_IMPLEMENTATION → IMPLEMENTED).
+
+### Audit
+1. Call `run_audit` to verify code matches the design graph.
+2. Review the audit report with `get_audit_report`.
+
+## 2. Available MCP Tools
+
+| Tool | Purpose |
+|------|---------|
+| `start_discovery` | Initialize project, begin interview |
+| `complete_discovery` | Mark interview as done |
+| `create_ipo_node` | Create or update a node |
+| `add_edge` | Connect two nodes |
+| `set_node_status` | Update node lifecycle status |
+| `get_context_injection` | Get implementation context for a node |
+| `get_canvas` | View full project state |
+| `detect_stack` | Auto-detect project technology |
+| `onboard_existing_project` | Import existing codebase |
+| `run_audit` | Verify code vs design |
+| `assign_node` | Assign a node to an agent |
+| `lock_node` / `unlock_node` | Multi-agent coordination |
+
+## 3. Rules
+- **Never skip discovery.** Always interview the user before creating nodes.
+- **Node status must progress sequentially**: DESIGN → READY_FOR_IMPLEMENTATION → IMPLEMENTED.
+- **Use NEEDS_REVISION** if implementation doesn't match spec — don't delete and recreate.
+- **Keep graphs modular**: 5-8 nodes for small projects, decompose further for larger ones.

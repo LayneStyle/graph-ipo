@@ -25,19 +25,21 @@ Add this configuration to your IDE's MCP settings (e.g., Antigravity, Cursor, Cl
 
 ---
 
-## 2. Installing the Visual Canvas UI
+## 2. Initialize Your Project
 
-To see your architecture graph in the browser, run the Canvas UI locally:
+In your project directory, run:
 
 ```bash
-npx degit LayneStyle/graph-ipo/canvas-ui graph-ipo-canvas
-cd graph-ipo-canvas
-npm install
-npm run dev
+npx @0xlayne/graph-ipo-harness init
 ```
 
-- **Canvas UI**: Open `http://localhost:3000` in your browser to view the graph.
-- **REST API**: A local API runs automatically at `http://localhost:3001` to serve your canvas data.
+This creates `.ipo/canvas.json` and automatically opens the **Canvas UI** in your browser at `http://localhost:3001`. The Canvas UI is embedded in the package — no separate installation or cloning needed.
+
+You can also check your project status anytime:
+
+```bash
+npx @0xlayne/graph-ipo-harness status
+```
 
 ---
 

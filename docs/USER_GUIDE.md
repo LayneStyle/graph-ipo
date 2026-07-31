@@ -12,7 +12,7 @@ GraphIPO encourages you to step back and design your system's architecture befor
 4. **Audit**: The agent uses the `run_audit` tool to compare the written code against the design in the graph, ensuring compliance.
 
 ## Understanding the Canvas UI
-When you run the Canvas UI (at `http://localhost:3000`), you'll see a visual representation of your architecture. The UI connects to a local REST API at `http://localhost:3001` to fetch your `.ipo/canvas.json` data.
+When the MCP server is running, the Canvas UI is available at `http://localhost:3001`. It shows a visual representation of your architecture in real-time. You can also launch it with `npx @0xlayne/graph-ipo-harness init`.
 
 ### How to Read an IPO Node
 Each node in the graph represents a specific piece of your system and follows the **IPO model**:
