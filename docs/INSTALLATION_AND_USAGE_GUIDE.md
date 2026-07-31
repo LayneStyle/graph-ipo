@@ -66,3 +66,39 @@ The agent will:
 
 ### To RESUME a project:
 Simply open your project folder in your IDE! The graph state is automatically persisted in the `.ipo/canvas.json` file. The MCP server and Canvas UI will instantly read from this file and resume right where you left off.
+
+---
+
+## 4. CLI Reference
+
+GraphIPO includes a standard CLI. If installed globally (`npm install -g @0xlayne/graph-ipo-harness`), use `graph-ipo <command>`. Otherwise, prefix with `npx @0xlayne/graph-ipo-harness`.
+
+| Command | Description |
+|---------|-------------|
+| `init` | Initialize GraphIPO, create `.ipo/canvas.json`, start server, open Canvas UI |
+| `status` | Show project progress, node counts, and completion percentage |
+| `discover` | Start or resume the discovery interview (opens Canvas UI) |
+| `canvas` | Open the Canvas UI in your browser |
+| `update` | Update GraphIPO to the latest version |
+| `reset` | Clear all nodes and edges, start over with a blank canvas |
+| `version` | Show installed version |
+| `help` | Show all available commands |
+
+### Examples
+
+```bash
+# Initialize a new project
+graph-ipo init
+
+# Check progress
+graph-ipo status
+
+# Open the visual canvas
+graph-ipo canvas
+
+# Update to latest version
+graph-ipo update
+
+# Start fresh (clears all nodes)
+graph-ipo reset
+```

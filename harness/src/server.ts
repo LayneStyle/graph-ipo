@@ -1036,11 +1036,35 @@ async function main() {
     if (req.method === 'OPTIONS') { res.sendStatus(200); return; }
     next();
   });
+  // Active project path — the CLI sets this so the server knows which project to serve
+  let activeProjectPath: string | null = null;
+
+  // REST: Set the active project path (called by CLI on init/canvas/discover)
+  apiApp.post('/api/set-project', (req: Request, res: Response) => {
+    const projectDir = req.body.path;
+    if (projectDir && typeof projectDir === 'string') {
+      activeProjectPath = path.join(projectDir, '.ipo', 'canvas.json');
+      console.error(`[GraphIPO] Active project set to: ${projectDir}`);
+      // Broadcast full state to connected Canvas UIs
+      try {
+        const { canvas } = loadCanvas(activeProjectPath);
+        wsBridge.broadcast({ type: 'FULL_STATE', payload: canvas });
+      } catch {}
+      res.json({ success: true, path: activeProjectPath });
+    } else {
+      res.status(400).json({ error: 'Missing path in request body' });
+    }
+  });
+
+  // REST: Get active project path
+  apiApp.get('/api/project', (req: Request, res: Response) => {
+    res.json({ path: activeProjectPath });
+  });
 
   // REST: Get full canvas state
   apiApp.get('/api/canvas', (req: Request, res: Response) => {
-    const overridePath = req.query.path as string | undefined;
-    const { canvas } = loadCanvas(overridePath);
+    const overridePath = (req.query.path as string | undefined) || activeProjectPath;
+    const { canvas } = loadCanvas(overridePath || undefined);
     res.json(canvas);
   });
 

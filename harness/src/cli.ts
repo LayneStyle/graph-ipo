@@ -83,15 +83,30 @@ async function isServerRunning(port: number): Promise<boolean> {
   }
 }
 
+async function setActiveProject(port: number) {
+  const projectDir = process.cwd();
+  try {
+    await fetch(`http://localhost:${port}/api/set-project`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: projectDir })
+    });
+    console.log(`  ${c.green}✓${c.reset} Active project: ${c.dim}${projectDir}${c.reset}`);
+  } catch {
+    // Server may not support this endpoint yet (old version)
+  }
+}
+
 function startServerAndOpenBrowser() {
   const port = parseInt(process.env.GRAPHIPO_API_PORT || '3001', 10);
   const url = `http://localhost:${port}`;
   const serverScript = path.join(__dirname, 'server.js');
 
   // Check if server is already running
-  isServerRunning(port).then(running => {
+  isServerRunning(port).then(async (running) => {
     if (running) {
       console.log(`  ${c.green}✓${c.reset} Canvas UI already running at ${c.cyan}${url}${c.reset}`);
+      await setActiveProject(port);
       openBrowser(url);
       return;
     }
@@ -106,9 +121,10 @@ function startServerAndOpenBrowser() {
       });
       child.unref();
 
-      // Wait a moment for server to start, then open browser
-      setTimeout(() => {
+      // Wait for server to start, then set project and open browser
+      setTimeout(async () => {
         console.log(`  ${c.green}✓${c.reset} Canvas UI available at ${c.cyan}${url}${c.reset}`);
+        await setActiveProject(port);
         openBrowser(url);
       }, 1500);
     } else {
@@ -231,7 +247,7 @@ function cmdDiscover() {
   
   if (canvas?.discovery_completed) {
     console.log(`${c.green}✅ Discovery already completed for this project.${c.reset}`);
-    console.log(`\n  ${c.dim}To redesign, delete ${CANVAS_DIR}/${CANVAS_FILE} and run ${c.cyan}graph-ipo init${c.dim} again.${c.reset}`);
+    console.log(`\n  ${c.dim}To redesign, run ${c.cyan}graph-ipo reset${c.dim} and start over.${c.reset}`);
     return;
   }
 
@@ -251,6 +267,68 @@ ${c.bold}🔍 Discovery Mode${c.reset}
 
   ${c.dim}Your canvas is at: ${getCanvasPath()}${c.reset}
 `);
+  startServerAndOpenBrowser();
+}
+
+function cmdUpdate() {
+  console.log(`${c.bold}📦 Updating GraphIPO...${c.reset}\n`);
+  console.log(`  ${c.dim}Current version: v${VERSION}${c.reset}`);
+  try {
+    execSync('npm cache clean --force 2>&1', { stdio: 'pipe' });
+    console.log(`  ${c.green}✓${c.reset} Cache cleared`);
+  } catch {
+    // Cache clean may fail, that's ok
+  }
+  try {
+    // Uninstall first to avoid EEXIST conflicts on Windows/NVM
+    execSync('npm uninstall -g @0xlayne/graph-ipo-harness 2>&1', { stdio: 'pipe' });
+    console.log(`  ${c.green}✓${c.reset} Old version removed`);
+  } catch {
+    // May not be installed globally, that's fine
+  }
+  try {
+    execSync('npm install -g @0xlayne/graph-ipo-harness@latest --force', { stdio: 'inherit' });
+    console.log(`\n  ${c.green}✓${c.reset} Updated to latest version.`);
+    console.log(`  ${c.dim}Run ${c.cyan}graph-ipo version${c.dim} to verify.${c.reset}`);
+  } catch {
+    console.log(`\n  ${c.yellow}⚠${c.reset} Global install failed. Try manually:`);
+    console.log(`  ${c.cyan}npm uninstall -g @0xlayne/graph-ipo-harness${c.reset}`);
+    console.log(`  ${c.cyan}npm install -g @0xlayne/graph-ipo-harness@latest --force${c.reset}`);
+  }
+}
+
+function cmdCanvas() {
+  if (!canvasExists()) {
+    console.log(`${c.yellow}⚠ GraphIPO is not initialized in this directory.${c.reset}`);
+    console.log(`\n  Run ${c.cyan}graph-ipo init${c.reset} first.`);
+    return;
+  }
+  console.log(`${c.bold}🎨 Opening Canvas UI...${c.reset}\n`);
+  startServerAndOpenBrowser();
+}
+
+function cmdReset() {
+  const canvasPath = getCanvasPath();
+  if (!canvasExists()) {
+    console.log(`${c.yellow}⚠ Nothing to reset — GraphIPO is not initialized here.${c.reset}`);
+    return;
+  }
+
+  const canvas = {
+    version: VERSION,
+    project_type: "",
+    project_description: "",
+    user_experience_level: "intermediate",
+    discovery_completed: false,
+    code_language: "EN",
+    edges: [],
+    nodes: []
+  };
+
+  fs.writeFileSync(canvasPath, JSON.stringify(canvas, null, 2), 'utf-8');
+  console.log(`${c.green}✅ Canvas reset to empty state.${c.reset}`);
+  console.log(`  ${c.dim}All nodes and edges have been cleared.${c.reset}`);
+  console.log(`\n  Run ${c.cyan}graph-ipo discover${c.reset} to start fresh.`);
 }
 
 function cmdVersion() {
@@ -267,7 +345,10 @@ ${c.bold}USAGE${c.reset}
 ${c.bold}COMMANDS${c.reset}
   ${c.cyan}init${c.reset}        Initialize GraphIPO in the current directory
   ${c.cyan}status${c.reset}      Show project progress and node summary
-  ${c.cyan}discover${c.reset}    Start or resume the discovery process
+  ${c.cyan}discover${c.reset}    Start or resume the discovery interview
+  ${c.cyan}canvas${c.reset}      Open the Canvas UI in your browser
+  ${c.cyan}update${c.reset}      Update GraphIPO to the latest version
+  ${c.cyan}reset${c.reset}       Clear all nodes and start over
   ${c.cyan}version${c.reset}     Show installed version
   ${c.cyan}help${c.reset}        Show this help message
 
@@ -311,6 +392,18 @@ switch (command) {
   case 'discover':
   case 'discovery':
     cmdDiscover();
+    break;
+  case 'canvas':
+  case 'ui':
+    cmdCanvas();
+    break;
+  case 'update':
+  case 'upgrade':
+    cmdUpdate();
+    break;
+  case 'reset':
+  case 'clean':
+    cmdReset();
     break;
   case 'version':
   case '-v':
