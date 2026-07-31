@@ -8,10 +8,10 @@ import { loadCanvas, saveCanvas } from "./canvasStore.js";
 import { buildStateBanner, validateCanvasState, evaluateNodePhase } from "./fsm.js";
 import { IPONode, IPOEdge, NodeStatusType, PhaseType, CanvasProgressSummary } from "./types.js";
 import { wsBridge } from "./ws-bridge.js";
+import { fileURLToPath } from 'node:url';
 import { execFileSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
-import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1075,9 +1075,25 @@ async function main() {
     }
   });
 
+  // Serve embedded Canvas UI (built from canvas-ui/)
+  const serverFilePath = fileURLToPath(import.meta.url);
+  const serverDir = path.dirname(serverFilePath);
+  const canvasDistPath = path.join(serverDir, '..', 'canvas-dist');
+  if (fs.existsSync(canvasDistPath)) {
+    apiApp.use(express.static(canvasDistPath));
+    // SPA fallback: serve index.html for non-API routes
+    apiApp.get('*', (req: Request, res: Response) => {
+      if (!req.path.startsWith('/api/')) {
+        res.sendFile(path.join(canvasDistPath, 'index.html'));
+      }
+    });
+  }
+
   const apiPort = parseInt(process.env.GRAPHIPO_API_PORT || '3001', 10);
   const apiServer = apiApp.listen(apiPort, () => {
-    console.error(`[GraphIPO] REST API available at http://localhost:${apiPort}/api/canvas`);
+    const uiAvailable = fs.existsSync(canvasDistPath);
+    console.error(`[GraphIPO] Canvas UI: http://localhost:${apiPort}${uiAvailable ? '' : ' (UI not bundled)'}`);
+    console.error(`[GraphIPO] REST API:  http://localhost:${apiPort}/api/canvas`);
   });
   apiServer.on('error', (err: NodeJS.ErrnoException) => {
     if (err.code === 'EADDRINUSE') {
