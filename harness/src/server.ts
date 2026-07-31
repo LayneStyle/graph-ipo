@@ -680,6 +680,18 @@ server.tool(
     const outPath = path.join(__dirname, "..", "audit_report.json");
     
     try {
+      // Check if Python is available
+      try {
+        execFileSync('python', ['--version'], { encoding: 'utf-8', stdio: 'pipe' });
+      } catch {
+        return { content: [{ type: "text", text: `⚠️ Python is required for code auditing but was not found on your system.\n\nTo install Python:\n- Windows: https://www.python.org/downloads/ (check "Add to PATH")\n- macOS: brew install python3\n- Linux: sudo apt install python3\n\nAfter installing, run the audit again.` }] };
+      }
+
+      // Check if analyzer script exists
+      if (!fs.existsSync(scriptPath)) {
+        return { content: [{ type: "text", text: `⚠️ The analyzer script was not found at: ${scriptPath}\n\nThe tree-sitter AST analyzer is included in the GitHub repository but not in the npm package.\nTo use auditing, clone the repo: git clone https://github.com/LayneStyle/graph-ipo` }] };
+      }
+
       execFileSync('python', [scriptPath, '--code-dir', args.code_dir, '--canvas-json', filePath, '--output-json', outPath], { encoding: 'utf-8' });
       const report = fs.readFileSync(outPath, "utf-8");
       return { content: [{ type: "text", text: `Audit complete:\n${report}` }] };
@@ -1022,9 +1034,16 @@ async function main() {
     }
   });
 
-  wsBridge.initialize(9120);
+  // Optional services: WebSocket + REST API + Canvas UI
+  // These enhance the experience but are NOT required for MCP tools to work.
+  // If ports are unavailable, we log a note and continue — MCP tools work via stdio regardless.
+  try {
+    wsBridge.initialize(9120);
+  } catch (err) {
+    console.error(`[GraphIPO] WebSocket init failed (non-fatal): ${err}`);
+  }
 
-  // Always start REST API server for Canvas UI communication
+  // REST API + Canvas UI server
   const apiApp = express();
   apiApp.use(express.json());
 
@@ -1113,20 +1132,30 @@ async function main() {
     });
   }
 
-  const apiPort = parseInt(process.env.GRAPHIPO_API_PORT || '3001', 10);
-  const apiServer = apiApp.listen(apiPort, () => {
-    const uiAvailable = fs.existsSync(canvasDistPath);
-    console.error(`[GraphIPO] Canvas UI: http://localhost:${apiPort}${uiAvailable ? '' : ' (UI not bundled)'}`);
-    console.error(`[GraphIPO] REST API:  http://localhost:${apiPort}/api/canvas`);
-  });
-  apiServer.on('error', (err: NodeJS.ErrnoException) => {
-    if (err.code === 'EADDRINUSE') {
-      console.error(`[GraphIPO] REST API port ${apiPort} in use, trying ${apiPort + 1}...`);
-      apiApp.listen(apiPort + 1, () => {
-        console.error(`[GraphIPO] REST API available at http://localhost:${apiPort + 1}/api/canvas`);
-      });
+  const baseApiPort = parseInt(process.env.GRAPHIPO_API_PORT || '3001', 10);
+
+  function tryListenOnPort(port: number, attempt: number) {
+    if (attempt > 10) {
+      console.error(`[GraphIPO] Could not find an available port after 10 attempts. REST API/Canvas UI will be unavailable.`);
+      console.error(`[GraphIPO] The MCP tools still work normally via your IDE.`);
+      return;
     }
-  });
+    const server = apiApp.listen(port, () => {
+      const uiAvailable = fs.existsSync(canvasDistPath);
+      console.error(`[GraphIPO] Canvas UI: http://localhost:${port}${uiAvailable ? '' : ' (UI not bundled)'}`);
+      console.error(`[GraphIPO] REST API:  http://localhost:${port}/api/canvas`);
+    });
+    server.on('error', (err: NodeJS.ErrnoException) => {
+      if (err.code === 'EADDRINUSE') {
+        console.error(`[GraphIPO] Port ${port} in use, trying ${port + 1}...`);
+        tryListenOnPort(port + 1, attempt + 1);
+      } else {
+        console.error(`[GraphIPO] REST API error: ${err.message}`);
+      }
+    });
+  }
+
+  tryListenOnPort(baseApiPort, 1);
 
   // Connect MCP transport (SSE or stdio)
   const isSSE = args.includes("--sse") || args.includes("--http") || Boolean(process.env.PORT);

@@ -134,6 +134,207 @@ function startServerAndOpenBrowser() {
   });
 }
 
+function generateCanvasHtml(dir: string) {
+  const htmlPath = path.join(dir, 'canvas.html');
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GraphIPO Canvas</title>
+<style>
+  :root { --bg: #0f1117; --surface: #1a1d27; --border: #2a2d3a; --text: #e4e4e7; --dim: #71717a; --accent: #6366f1; --green: #22c55e; --yellow: #eab308; --blue: #3b82f6; --red: #ef4444; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; align-items: center; gap: 16px; }
+  .header h1 { font-size: 18px; font-weight: 600; }
+  .header .badge { background: var(--accent); color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .header .stats { margin-left: auto; font-size: 13px; color: var(--dim); }
+  .container { display: flex; height: calc(100vh - 57px); }
+  .sidebar { width: 280px; background: var(--surface); border-right: 1px solid var(--border); overflow-y: auto; padding: 16px; flex-shrink: 0; }
+  .sidebar h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--dim); margin-bottom: 12px; }
+  .node-card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 8px; cursor: pointer; transition: border-color 0.2s; }
+  .node-card:hover { border-color: var(--accent); }
+  .node-card.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .node-title { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+  .node-type { font-size: 11px; color: var(--dim); background: var(--surface); padding: 2px 6px; border-radius: 3px; display: inline-block; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+  .status-IMPLEMENTED { background: var(--green); }
+  .status-READY_FOR_IMPLEMENTATION { background: var(--blue); }
+  .status-DESIGN { background: var(--yellow); }
+  .status-NEEDS_REVISION { background: var(--red); }
+  .canvas-area { flex: 1; position: relative; overflow: hidden; }
+  svg { width: 100%; height: 100%; }
+  .node-rect { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; rx: 8; cursor: grab; transition: stroke 0.2s; }
+  .node-rect:hover { stroke: var(--accent); }
+  .node-label { fill: var(--text); font-size: 12px; font-weight: 500; pointer-events: none; }
+  .node-sublabel { fill: var(--dim); font-size: 10px; pointer-events: none; }
+  .edge-line { stroke: var(--border); stroke-width: 1.5; fill: none; marker-end: url(#arrow); }
+  .edge-label { fill: var(--dim); font-size: 10px; }
+  .detail-panel { width: 320px; background: var(--surface); border-left: 1px solid var(--border); padding: 20px; overflow-y: auto; display: none; }
+  .detail-panel.open { display: block; }
+  .detail-panel h2 { font-size: 16px; margin-bottom: 16px; }
+  .detail-section { margin-bottom: 16px; }
+  .detail-section h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--dim); margin-bottom: 8px; }
+  .detail-section ul { list-style: none; }
+  .detail-section li { font-size: 13px; padding: 4px 0; color: var(--text); border-bottom: 1px solid var(--border); }
+  .detail-section li:last-child { border: none; }
+  .welcome { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 40px; }
+  .welcome h2 { font-size: 24px; margin-bottom: 12px; }
+  .welcome p { color: var(--dim); max-width: 500px; line-height: 1.6; }
+  .welcome code { background: var(--surface); padding: 2px 8px; border-radius: 4px; font-size: 13px; }
+  .refresh-btn { position: fixed; bottom: 20px; right: 20px; background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 500; z-index: 100; }
+  .refresh-btn:hover { opacity: 0.9; }
+  .empty-msg { color: var(--dim); font-size: 13px; text-align: center; padding: 20px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>🚀 GraphIPO</h1>
+  <span class="badge" id="projectType">Unknown Project</span>
+  <span class="stats" id="stats">Loading...</span>
+</div>
+<div class="container">
+  <div class="sidebar">
+    <h3>Nodes in Canvas (<span id="nodeCount">0</span>)</h3>
+    <div id="nodeList"></div>
+  </div>
+  <div class="canvas-area" id="canvasArea">
+    <svg id="graphSvg">
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#71717a"/>
+        </marker>
+      </defs>
+    </svg>
+  </div>
+  <div class="detail-panel" id="detailPanel">
+    <h2 id="detailTitle"></h2>
+    <div id="detailContent"></div>
+  </div>
+</div>
+<button class="refresh-btn" onclick="loadCanvas()">↻ Refresh</button>
+
+<script>
+let canvasData = null;
+let selectedNode = null;
+
+async function loadCanvas() {
+  try {
+    const res = await fetch('./canvas.json?t=' + Date.now());
+    canvasData = await res.json();
+    render();
+  } catch (e) {
+    document.getElementById('canvasArea').innerHTML = '<div class="welcome"><h2>⚠️ Could not load canvas.json</h2><p>Make sure this file is served via HTTP, not opened directly.<br>Run: <code>graph-ipo canvas</code></p></div>';
+  }
+}
+
+function render() {
+  const nodes = canvasData.nodes || [];
+  const edges = canvasData.edges || [];
+  
+  // Header
+  document.getElementById('projectType').textContent = canvasData.project_type || 'Unknown Project';
+  const impl = nodes.filter(n => n.status === 'IMPLEMENTED').length;
+  const design = nodes.filter(n => n.status === 'DESIGN').length;
+  document.getElementById('stats').textContent = impl + '/' + nodes.length + ' Implemented · ' + design + ' In Design';
+  document.getElementById('nodeCount').textContent = nodes.length;
+  
+  // Sidebar
+  const list = document.getElementById('nodeList');
+  if (nodes.length === 0) {
+    list.innerHTML = '<div class="empty-msg">No nodes yet.<br>Tell your AI agent:<br><code>"Use start_discovery to begin."</code></div>';
+  } else {
+    list.innerHTML = nodes.map(n => '<div class="node-card" data-id="' + n.id + '" onclick="selectNode(\\'' + n.id + '\\')">' +
+      '<div class="node-title"><span class="status-dot status-' + (n.status||'DESIGN') + '"></span>' + (n.title||n.id) + '</div>' +
+      '<span class="node-type">' + (n.type||'Component') + '</span></div>').join('');
+  }
+  
+  // SVG Canvas
+  renderGraph(nodes, edges);
+}
+
+function renderGraph(nodes, edges) {
+  const svg = document.getElementById('graphSvg');
+  const area = document.getElementById('canvasArea');
+  const W = area.clientWidth, H = area.clientHeight;
+  
+  if (nodes.length === 0) {
+    svg.innerHTML = '<defs><marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#71717a"/></marker></defs>';
+    document.getElementById('canvasArea').innerHTML += '<div class="welcome" id="welcomeMsg"><h2>🚀 Welcome to GraphIPO</h2><p>Design your software visually before writing any code.<br><br>Tell your AI agent what you want to build, and it will guide you through the design process.</p></div>';
+    return;
+  }
+  
+  const wel = document.getElementById('welcomeMsg');
+  if (wel) wel.remove();
+  
+  // Simple force-directed layout
+  const positions = {};
+  const cols = Math.ceil(Math.sqrt(nodes.length));
+  const spacing = Math.min(W / (cols + 1), 220);
+  nodes.forEach((n, i) => {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    positions[n.id] = { x: 80 + col * spacing, y: 80 + row * 140 };
+  });
+  
+  let svgContent = '<defs><marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#71717a"/></marker></defs>';
+  
+  // Edges
+  edges.forEach(e => {
+    const s = positions[e.source], t = positions[e.target];
+    if (s && t) {
+      const mx = (s.x + t.x) / 2 + 75, my = (s.y + t.y) / 2;
+      svgContent += '<line class="edge-line" x1="' + (s.x+75) + '" y1="' + (s.y+25) + '" x2="' + (t.x+75) + '" y2="' + (t.y+25) + '"/>';
+      if (e.label) svgContent += '<text class="edge-label" x="' + mx + '" y="' + (my-5) + '" text-anchor="middle">' + e.label + '</text>';
+    }
+  });
+  
+  // Nodes
+  const statusColors = { IMPLEMENTED: '#22c55e', READY_FOR_IMPLEMENTATION: '#3b82f6', DESIGN: '#eab308', NEEDS_REVISION: '#ef4444' };
+  nodes.forEach(n => {
+    const p = positions[n.id];
+    const color = statusColors[n.status] || '#71717a';
+    svgContent += '<g onclick="selectNode(\\'' + n.id + '\\')" style="cursor:pointer">';
+    svgContent += '<rect class="node-rect" x="' + p.x + '" y="' + p.y + '" width="150" height="50" style="stroke:' + color + '"/>';
+    svgContent += '<text class="node-label" x="' + (p.x+75) + '" y="' + (p.y+22) + '" text-anchor="middle">' + (n.title||n.id).substring(0,20) + '</text>';
+    svgContent += '<text class="node-sublabel" x="' + (p.x+75) + '" y="' + (p.y+38) + '" text-anchor="middle">' + (n.status||'DESIGN') + '</text>';
+    svgContent += '</g>';
+  });
+  
+  svg.innerHTML = svgContent;
+}
+
+function selectNode(id) {
+  selectedNode = canvasData.nodes.find(n => n.id === id);
+  if (!selectedNode) return;
+  
+  document.querySelectorAll('.node-card').forEach(c => c.classList.toggle('selected', c.dataset.id === id));
+  
+  const panel = document.getElementById('detailPanel');
+  panel.classList.add('open');
+  document.getElementById('detailTitle').textContent = selectedNode.title || selectedNode.id;
+  
+  let html = '<div class="detail-section"><h4>Status</h4><p><span class="status-dot status-' + (selectedNode.status||'DESIGN') + '"></span>' + (selectedNode.status||'DESIGN') + '</p></div>';
+  if (selectedNode.type) html += '<div class="detail-section"><h4>Type</h4><p>' + selectedNode.type + '</p></div>';
+  if (selectedNode.inputs?.length) html += '<div class="detail-section"><h4>Inputs</h4><ul>' + selectedNode.inputs.map(i => '<li>→ ' + i + '</li>').join('') + '</ul></div>';
+  if (selectedNode.process?.length) html += '<div class="detail-section"><h4>Process</h4><ul>' + selectedNode.process.map(p => '<li>⚙ ' + p + '</li>').join('') + '</ul></div>';
+  if (selectedNode.outputs?.length) html += '<div class="detail-section"><h4>Outputs</h4><ul>' + selectedNode.outputs.map(o => '<li>← ' + o + '</li>').join('') + '</ul></div>';
+  if (selectedNode.pseudocode) html += '<div class="detail-section"><h4>Pseudocode</h4><pre style="background:var(--bg);padding:12px;border-radius:6px;font-size:12px;overflow-x:auto;white-space:pre-wrap">' + selectedNode.pseudocode + '</pre></div>';
+  
+  document.getElementById('detailContent').innerHTML = html;
+}
+
+// Auto-refresh every 3 seconds
+loadCanvas();
+setInterval(loadCanvas, 3000);
+</script>
+</body>
+</html>`;
+
+  fs.writeFileSync(htmlPath, html, 'utf-8');
+}
+
 // ============================================
 // COMMANDS
 // ============================================
@@ -144,8 +345,11 @@ function cmdInit() {
   if (canvasExists()) {
     console.log(`${c.yellow}⚠ GraphIPO is already initialized in this directory.${c.reset}`);
     console.log(`  Canvas: ${c.dim}${canvasPath}${c.reset}`);
+    // Regenerate HTML in case it's missing or outdated
+    const dir = path.join(process.cwd(), CANVAS_DIR);
+    generateCanvasHtml(dir);
     console.log(`\n  Starting Canvas UI...`);
-    startServerAndOpenBrowser();
+    cmdCanvas();
     return;
   }
 
@@ -163,14 +367,16 @@ function cmdInit() {
   const dir = path.join(process.cwd(), CANVAS_DIR);
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(canvasPath, JSON.stringify(canvas, null, 2), 'utf-8');
+  generateCanvasHtml(dir);
 
   console.log(`
 ${c.green}${c.bold}✅ GraphIPO initialized!${c.reset}
 
   ${c.dim}Created:${c.reset} ${CANVAS_DIR}/${CANVAS_FILE}
+  ${c.dim}Created:${c.reset} ${CANVAS_DIR}/canvas.html
 `);
 
-  startServerAndOpenBrowser();
+  cmdCanvas();
 
   console.log(`
 ${c.bold}Next steps:${c.reset}
@@ -297,14 +503,56 @@ function cmdUpdate() {
   }
 }
 
-function cmdCanvas() {
+async function cmdCanvas() {
   if (!canvasExists()) {
     console.log(`${c.yellow}⚠ GraphIPO is not initialized in this directory.${c.reset}`);
     console.log(`\n  Run ${c.cyan}graph-ipo init${c.reset} first.`);
     return;
   }
-  console.log(`${c.bold}🎨 Opening Canvas UI...${c.reset}\n`);
-  startServerAndOpenBrowser();
+
+  const ipoDir = path.join(process.cwd(), CANVAS_DIR);
+  const htmlFile = path.join(ipoDir, 'canvas.html');
+  if (!fs.existsSync(htmlFile)) {
+    generateCanvasHtml(ipoDir);
+  }
+
+  // Serve the .ipo/ folder on a local port so canvas.html can fetch canvas.json
+  const { createServer } = await import('node:http');
+  const serveHandler = (req: any, res: any) => {
+    const url = new URL(req.url || '/', 'http://localhost');
+    let filePath = path.join(ipoDir, url.pathname === '/' ? 'canvas.html' : url.pathname);
+    // Security: don't serve files outside .ipo/
+    if (!filePath.startsWith(ipoDir)) { res.writeHead(403); res.end(); return; }
+    if (!fs.existsSync(filePath)) { res.writeHead(404); res.end('Not found'); return; }
+    const ext = path.extname(filePath);
+    const mimeTypes: Record<string,string> = { '.html': 'text/html', '.json': 'application/json', '.css': 'text/css', '.js': 'application/javascript' };
+    res.writeHead(200, { 'Content-Type': mimeTypes[ext] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
+    res.end(fs.readFileSync(filePath));
+  };
+
+  const server = createServer(serveHandler);
+  let port = 4170;
+
+  const tryListen = (p: number, attempts: number) => {
+    if (attempts > 20) {
+      console.log(`  ${c.yellow}⚠${c.reset} Could not find an available port.`);
+      return;
+    }
+    server.listen(p, () => {
+      const url = `http://localhost:${p}`;
+      console.log(`  ${c.green}✓${c.reset} Canvas UI serving at ${c.cyan}${url}${c.reset}`);
+      console.log(`  ${c.dim}Serving: ${ipoDir}${c.reset}`);
+      console.log(`  ${c.dim}Press Ctrl+C to stop${c.reset}`);
+      openBrowser(url);
+    });
+    server.on('error', (err: NodeJS.ErrnoException) => {
+      if (err.code === 'EADDRINUSE') {
+        tryListen(p + 1, attempts + 1);
+      }
+    });
+  };
+
+  tryListen(port, 0);
 }
 
 function cmdReset() {
